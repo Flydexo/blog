@@ -1,0 +1,18 @@
+---
+import Base from '../layouts/Base.astro';
+import Comments from '../components/Comments.astro';
+import ghost from '../data/ghost.json';
+import {getCollection,render} from 'astro:content';
+export async function getStaticPaths(){const entries=await getCollection('blog',({data})=>!data.draft);const ids=new Set(ghost.map(p=>p.slug));for(const e of entries){if(ids.has(e.id))throw new Error('Duplicate slug: '+e.id)}return [...ghost.filter(p=>!p.draft).map(p=>({params:{slug:p.slug},props:{post:p,entry:null}})),...entries.map(entry=>({params:{slug:entry.id},props:{post:null,entry}}))];}
+const {post,entry}=Astro.props;
+const rendered=entry?await render(entry):null;
+const Content=rendered?.Content;
+const title=post?.title??entry!.data.title;
+const description=post?.description??entry!.data.description;
+const date=post?.date??entry!.data.pubDate;
+---
+<Base title={title} description={description}><article data-pagefind-body><h1>{title}</h1>{post?.kind!=='page'&&<time datetime={new Date(date).toISOString()}>{new Date(date).toLocaleDateString('en',{dateStyle:'long'})}</time>}{post?<div class="prose ghost-content" set:html={post.html}/>:Content&&<Content/>}</article><Comments/></Base>
+<script>
+import renderMathInElement from 'katex/contrib/auto-render';
+document.querySelectorAll<HTMLElement>('.ghost-content').forEach(el=>renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false}],throwOnError:false}));
+</script>

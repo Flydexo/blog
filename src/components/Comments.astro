@@ -1,0 +1,5 @@
+---
+import {site} from '../config';
+const g=site.giscus;
+---
+{g.repo&&g.repoId&&g.categoryId&&<script is:inline src="https://giscus.app/client.js" data-repo={g.repo} data-repo-id={g.repoId} data-category={g.category} data-category-id={g.categoryId} data-mapping="pathname" data-strict="1" data-reactions-enabled="1" data-input-position="bottom" data-theme="preferred_color_scheme" data-lang="en" crossorigin="anonymous" async></script>}

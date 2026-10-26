@@ -1,0 +1,1 @@
+Put notebooks here. The first Markdown cell must start with article YAML frontmatter (title, description, pubDate, draft). Save outputs before committing; builds never execute notebook code. See the root README.

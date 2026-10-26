@@ -1,0 +1,4 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="Search"><h1>Search the notebook.</h1><div id="search"></div><link rel="stylesheet" href="/pagefind/pagefind-ui.css"/><script is:inline src="/pagefind/pagefind-ui.js"></script><script is:inline>if(window.PagefindUI)new PagefindUI({element:'#search',showSubResults:true});else document.querySelector('#search').textContent='Search is available after npm run build, using npm run preview.';</script></Base>

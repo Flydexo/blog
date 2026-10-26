@@ -1,0 +1,6 @@
+---
+import Base from '../layouts/Base.astro';
+import {posts} from '../lib/posts';
+const articles=await posts();
+---
+<Base><section class="intro"><span class="eyebrow">NOTES / RESEARCH / IDEAS</span><h1>Learning in public.</h1><p>I'm Mathéo. Exploring artificial intelligence, world models, and the mathematics underneath.</p><a href="/about/">More about me ↗</a></section><section aria-label="Articles">{articles.map(p=><article class="post"><time datetime={p.date}>{new Date(p.date).toLocaleDateString('en',{year:'numeric',month:'short',day:'numeric'})}</time><h2><a href={'/'+p.slug+'/'}>{p.title}</a></h2><p>{p.description}</p><span class="tags">{p.tags.join(' / ')}</span></article>)}</section></Base>
