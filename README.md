@@ -67,7 +67,7 @@ Giscus is optional and disabled until configured in `src/config.ts`. It needs a 
 
 ## Migration status
 
-Six complete articles and About are ready for publication. Two previously members-only articles remain incomplete drafts because Ghost admin login returned HTTP 403. Their original URLs must be restored with complete content before production cutover. Keep Ghost online until that is resolved and article links, media, equations and embeds have been visually compared. Original Ghost metadata and content are preserved where the public API exposes them; drafts, revisions, member records and private settings were not migrated.
+All eight articles and About are imported, including the complete STARK parts 2 and 3. Original URLs are preserved, Ghost media is localized, and former members-only posts are public. Subscription prompts are removed. Drafts, revisions, member records and private settings were not migrated. Browser comparison of rich cards and embeds remains recommended before production cutover.
 
 ## Hosting later
 
