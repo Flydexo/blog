@@ -7,6 +7,6 @@ Validation performed:
 - Browser visual comparison, rich embeds and production hosting have not been verified.
 
 Pending:
-- Full bodies for two previously members-only posts (see report.json). Public API responses were truncated; admin session request returned HTTP 403.
-- GitHub repository creation rejected with "Resource not accessible by integration". Local source is ready to push after a private Flydexo/blog repo is created and accessible.
+- Full bodies for two previously members-only posts (see report.json). Public API responses were truncated; admin session request returned HTTP 403 with a non-JSON text/plain response. Credentials were supplied; this response does not establish that they are incorrect.
+- Local-only work requested. No GitHub repository or deployment is currently required.
 - No deployment or DNS changes performed.
