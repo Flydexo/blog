@@ -1,0 +1,14 @@
+.git
+.github
+.vscode
+node_modules
+dist
+.astro
+.env
+.env.*
+private
+migration
+src/content/blog/notebooks
+public/notebooks
+**/__pycache__
+*.log

@@ -1,0 +1,18 @@
+services:
+  blog:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SITE_URL: ${SITE_URL:-https://matheold.com}
+    restart: unless-stopped
+    expose:
+      - "8080"
+    networks:
+      - dokploy-network
+
+# Dokploy creates this shared network for its Traefik reverse proxy.
+# Configure the domain in Dokploy: service "blog", container port 8080.
+networks:
+  dokploy-network:
+    external: true

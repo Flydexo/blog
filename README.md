@@ -69,6 +69,23 @@ Giscus is optional and disabled until configured in `src/config.ts`. It needs a 
 
 All eight articles and About are imported, including the complete STARK parts 2 and 3. Original URLs are preserved, Ghost media is localized, and former members-only posts are public. Subscription prompts are removed. Drafts, revisions, member records and private settings were not migrated. Browser comparison of rich cards and embeds remains recommended before production cutover.
 
-## Hosting later
+## Dokploy Compose deployment
 
-Serve `dist/` using any static HTTP server. For Dokploy, configure a static build or container when deployment is requested. Route unknown paths to `404.html` with HTTP 404; do not use SPA fallback. Preserve trailing slashes. Keep the old site until validation and DNS cutover are complete.
+1. Create a **Docker Compose** application in Dokploy and select the private `Flydexo/blog` repository, branch `main`. The Dokploy GitHub connection must have access to this repository.
+2. Set the Compose path to `./docker-compose.yml` and use the repository root as the build context.
+3. Optionally set `SITE_URL=https://matheold.com` in the application's environment. This is a **build argument**: redeploy after changing it so canonical URLs, RSS and the sitemap are regenerated.
+4. Add your domain in Dokploy's **Domains** tab, selecting service `blog`, container port **8080**, and HTTPS. Dokploy manages routing/TLS through its existing `dokploy-network`; no host port is published.
+5. Enable **Auto Deploy** for pushes to `main` in Dokploy and configure the repository webhook/GitHub integration as prompted. Deploy once to validate the connection.
+
+The Compose file alone cannot enable Dokploy webhooks, grant repository access, or configure DNS. Point the domain at your Dokploy server when you are ready to switch traffic.
+
+The Docker build installs Node and notebook dependencies, runs the full Astro + Pagefind build, then copies only static output into an unprivileged Nginx image. Runtime health checks use `/healthz`. Unknown paths return the custom page with HTTP 404; this is not an SPA fallback. No persistent volumes are required.
+
+For a local Docker preview without Dokploy:
+
+```sh
+docker build -t matheold-blog .
+docker run --rm -p 8080:8080 matheold-blog
+```
+
+Open http://localhost:8080. No deployment or DNS changes have been made by adding these files.
