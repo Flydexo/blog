@@ -23,9 +23,9 @@ Production output is `dist/`. Pagefind search is generated during build and work
 - `src/layouts/Base.astro`: shared document, navigation, SEO and footer.
 - `src/components/`: reusable MDX components, diagrams and comments.
 - `src/content/blog/`: new Markdown/MDX articles. The writing-guide draft demonstrates math, code and Mermaid.
-- `src/data/ghost.json`: imported HTML preserved for fidelity, metadata and original slugs.
-- `scripts/`: explicit Ghost import and notebook conversion.
-- `migration/report.json`: imported entries, incomplete drafts and localized media.
+- All eight articles and About are native MDX in `src/content/blog/`. About uses `kind: page` and is excluded from the article index and RSS.
+- `scripts/`: notebook conversion.
+- `migration/`: migration history and validation notes.
 
 Set `SITE_URL` at build time to change the canonical origin (default https://matheold.com). The previous Ghost installation used https://flydexo.com in canonical URLs. Decide your production origin before launch. Existing article and About slugs are retained.
 
@@ -51,15 +51,11 @@ Use fenced code blocks for Expressive Code. Import `Mermaid.astro` as shown in t
 
 Install `python3 -m pip install -r requirements.txt`. Put `.ipynb` sources in `notebooks/`. The first Markdown cell must contain the same YAML frontmatter shown above. Build converts saved outputs using nbconvert; it **never executes cells**. Markdown, images and existing outputs are included; widget state and arbitrary rich HTML outputs may require a custom MDX component. Generated Markdown and figures are ignored by Git. Notebook authors must review outputs for secrets before committing.
 
-## Ghost import
+## Migrated articles
 
-```sh
-npm run import:ghost -- /path/to/posts.json /path/to/pages.json
-```
+All articles are directly editable MDX with ordinary Markdown headings, lists, tables, image links, fenced code and KaTeX math. JSON and Python blocks use explicit language tags and Expressive Code's GitHub light/dark themes. Equations render at build time, with no browser-side Ghost math renderer.
 
-Accepts Content/Admin API JSON or a Ghost database export containing rendered HTML. It imports published records only, stores local copies of Ghost media, preserves original slugs, rewrites internal links and removes script tags and simple subscription prompts. Only import trusted author-owned HTML. Review imported rich cards and embeds visually.
-
-Public API members-only bodies are incomplete and are retained as drafts. Once full published article bodies are available from Ghost, rerun with `--complete` to publish **all** entries regardless of former visibility. Do not use that flag with truncated public API output. Import replaces the generated dataset; include both posts and pages each time. Keep raw exports outside the repository: they can contain account or member information.
+The initial Ghost HTML snapshot and importer were retired; their history remains in Git. Edit the MDX files rather than reimporting HTML over them. Original article slugs and legacy heading anchors are preserved. Local images live in `public/media/`.
 
 ## Comments
 

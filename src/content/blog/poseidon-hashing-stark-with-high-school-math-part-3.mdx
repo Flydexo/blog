@@ -1,0 +1,129 @@
+---
+title: "Poseidon Hashing - STARK with high school math part 3"
+description: "Explore the Poseidon permutation, sponge construction, and polynomial constraints for a ZK-friendly hash."
+pubDate: "2026-02-08T18:53:05.000+01:00"
+tags: []
+kind: "post"
+draft: false
+---
+
+Last time we succeeded at producing the following proof:
+
+> "I, prover, know a certain word w that is accepted by the automata A"
+
+Where A is public and w "private" (not really yet, because we haven't applied out of domain randomisation, coming soon). But the problem is that no one cares about that proof. Yes the prover knows a word, but how can the verifier know it is a word that has certain properties, for examples that the word has been signed by a trusted third party (a website, government, etc...). For that we need an ID for the word that does not disclose any information. That ID it's digest (image) of a hashing function.
+
+So we now want to prove this:
+
+> "I, prover, know a certain word w that is accepted by the automata A and h(w) = H"
+
+Where A, H is public and h is a predetermined hash-function. Great so let's just hash the word and send the hash to the verifier. But wait? How can the verifier be sure that you indeed hashed to word w and not another one? Ok then, let's prove the hash execution using the same techniques as before (trace -\> LDE -\> commitment  -\> constraints -\> FRI), I you don't understand what I'm referring to, I advise you to read [part 1](/understanding-starks-from-scratch-with-high-school-math-part-1/).
+
+So let's chose a hash function then, sha256 the same as Bitcoin, should be secure enough. The issue is that famous hash functions like the sha-2/3 family use bit operations such as XOR which are very efficient on a computer but are very difficult to express as polynomial constraints. That is why we need hash functions that are nice to represent as polynomials. This is what we call **ZK friendly hash functions.** And the Poseidon hash function is on of them.
+
+## The Poseidon permutation
+
+Poseidon in itself isn't exactly a hash function but a permutation. A permutation is the core element of a sponge construction for hash function.
+
+### The sponge construction
+
+> If you want a more detailed explanation, [here](https://youtu.be/Y7Ru2yVKU90?si=_ky86mGa9S4sYfrr&t=1514&ref=flydexo.com) is a nice ZK Whiteboard from ZKHack.
+
+The sponge construction is a way to construct hash functions. In the simplest terms, your sponge has an internat state of size T, which is split in two parts: the rate (of size R) and the capacity (of size C).
+
+Once its state is filled (we'll see later how), the sponge performs the permutation on its state (the squeezing phase) and then absorbs the next input in the rate part (the input is never added to the capacity part).
+
+So for an input of size N, we need to split our input into chunks of size R (the rate size) because our sponge only absorbs chunks of size R one at a time.
+
+Let's take an example: Let R be 3 and C be 1. Let's hash the input ***AMAZINGINPUT***
+
+*First things firsts, the input is of size 12 (which is a multiple of 3, R) so we do not need to pad (add extra zeroes at the end).*
+
+*Let's split our input in chunks of size 3: \[AMA,ZIN,GIN,PUT\].*
+
+*At the beginning, the state is initialised with all 0 $[0;0;0;0]$*
+
+*Then we add (absorb), the first chunks into the rate $S_0 = [A;M;A;0]$*
+
+*We apply the permutation $\pi$ to the state so $S_1 = \pi(S_0)$*
+
+*We add the next chunks into the state, we apply the permutation, absorb, squeeze, absorb, squeeze. Until, there's no more chunks left. Then you output the capacity part (here of size 1, which is usually the case with Poseidon as we want to output a single field element).*
+
+![Poseidon sponge construction diagram](/media/764dad6efdc10aae52f7.png)
+
+### The Poseidon permutation
+
+The Poseidon permutation is a loop that performs a defined number of rounds. Each round changes the state.
+
+The Poseidon permutation is composed of full rounds and partial rounds:
+
+#### Full rounds
+
+1. Add the round constants, add a constant to each cell of the state, the constants change every round
+2. Apply S-box, putting each cell of the state to a certain power $x^\alpha$
+3. Mix the layer, meaning multiplying the state as a column vector by a [MDS](https://en.wikipedia.org/wiki/MDS_matrix?ref=flydexo.com) matrix
+
+#### Partial rounds
+
+1. Add the round constants
+2. Apply S-box only to the first cell of the state
+3. Mix the layer
+
+To strike a balance between security and efficiency, we need to repeat the full rounds/partial rounds a certain number of times.
+
+The Poseidon chose the Hades design meaning it splits the permutation into three phases:
+
+1. Partial rounds ($R_p/2 \text{ times}$)
+2. Full rounds ($R_f \text{ times}$)
+3. Partial rounds ($R_p/2 \text{ times}$)
+
+And that's it, you've got the very basics of the Poseidon hash function (now you can  say that actually Poseidon is a permutation of a sponge construction, not a hash function in itself).
+
+Now the nightmare is coming, proving Poseidon.
+
+## Proving Poseidon
+
+To prove Poseidon, we need to do the same as we did on the automata. Create polynomial constraints (AIR) over the trace of the execution of Poseidon. Here the trace of Poseidon being the state after each round.
+
+But the annoying part is that the behaviour of Poseidon isn't the same at each step unlike the automata, it can perform either a full round or a partial round and sometimes even absorb new input.
+
+But after some time you have something like this:
+
+```python
+poseidon_full_round_polynomials = mds@[(ptrace_polynomials[j](X) + hash_input_poly[j](X) + arc_polys[j](X))**5 for j in range(T)]
+poseidon_partial_round_polynomials = mds@[(ptrace_polynomials[j](X) + hash_input_poly[j](X) + arc_polys[j](X))**(5 if j == 0 else 1) for j in range(T)]
+X_G = Polynomial([FieldElement.one()])
+Z_G = Polynomial([FieldElement.one()])
+for i in range(len(ptrace)-1):
+    r = i%(r_f+r_p)
+    if(r < r_f/2 or r >= r_f/2+r_p):
+      X_G = X_G * (X-z[i])
+    else:
+        Z_G = Z_G * (X-z[i])
+poseidon_constraint_full_round = [(ptrace_polynomials[j](gp*X) - poseidon_full_round_polynomials[j](X))/X_G for j in range(len(ptrace_polynomials))]
+poseidon_constraint_partial_round = [(ptrace_polynomials[j](gp*X) - poseidon_partial_round_polynomials[j](X))/Z_G for j in range(len(ptrace_polynomials))]
+poseidon_constraints_initial = [p/(X-1) for p in ptrace_polynomials]
+poseidon_output_constraint = (ptrace_polynomials[0](X)-phash[0])/(X-z[-1])
+```
+
+Poseidon AIR
+
+Where *mds* is a MDS matrix (usually a Cauchy matrix), *ptrace_polynomials* is a list of the polynomial interpolation of each cell in the state, *hash_input_poly* a list of polynomials interpolating the input at each cell (input index mod rate), *arc_polys* a polynomial interpolation of the round constants (easier to handle as a polynomial, but more expensive to compute).
+
+That's it, you've now proved the following statement:
+
+> I, prover, know a certain word w that is accepted by the automata A and h(w) = H
+
+Or did you?
+
+## The crucial mistake
+
+In reality, you've not proven the statement that you know a word **both** accepted by the automata and that it's digest is equal to a certain H. You've proved to unlinked facts: 1. you know a word $w_1$ accepted by the automata 2. you know a word $w_2$ whose digest is H. But you've never proved that $w_1 = w_2$.
+
+And oh boy, that is way harder to prove. Because the problem is that you cannot just concatenate the two traces (automata and poseidon) together and that's it. No, because Poseidon consumes the input a rate R every $R_f + R_p$ rows you need to make your trace look like this:
+
+state | w_0 | ... | w_6 | h_0 | .... | h_7
+
+And the constraints a more difficult to write (I'm in the process of writing it, and all I can tell you, is that it is a pain in the AIR)
+
+If I survive this, I'll explain you how I could make a zero knowledge regex engine. But there's work to be done.

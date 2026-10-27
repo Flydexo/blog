@@ -5,4 +5,4 @@ import sitemap from '@astrojs/sitemap';
 import expressiveCode from 'astro-expressive-code';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-export default defineConfig({site:process.env.SITE_URL || 'https://matheold.com', trailingSlash:'always', integrations:[expressiveCode(),mdx(),sitemap()],markdown:{processor:unified({remarkPlugins:[remarkMath],rehypePlugins:[rehypeKatex]})}});
+export default defineConfig({site:process.env.SITE_URL || 'https://matheold.com', trailingSlash:'always', integrations:[expressiveCode({themes:['github-light','github-dark'],useDarkModeMediaQuery:true}),mdx(),sitemap()],markdown:{processor:unified({remarkPlugins:[remarkMath],rehypePlugins:[rehypeKatex]})}});

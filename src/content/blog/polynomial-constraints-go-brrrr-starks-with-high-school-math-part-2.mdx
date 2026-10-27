@@ -1,0 +1,112 @@
+---
+title: "Polynomial constraints go brrrr (STARKs with high school math part 2)"
+description: "Combine polynomial constraints and explore FRI folding and Merkle commitments in the next step toward a STARK proof."
+pubDate: "2026-01-05T17:39:31.000+01:00"
+tags: []
+kind: "post"
+draft: false
+---
+
+Last time we had the following constraints for our automata:
+
+- $C_0 =  \frac{S(0) - q_0}{X-0}$
+
+- $C_1 =  \frac{\prod_{q \in F}{S(n-1) - q}}{X - (n-1)}$ where n is the number of steps and $F$ the accepting states
+
+- $C_2 = \frac{\text{step polynomial}}{\prod_{0 \le i \lt n-1}{(X-i)}}$
+
+Now we want to prove to the verifier that our trace respects the constraints. For that we could iterate the process I'm about to describe for each constraint but for the sake of performance we will merge our constraints into a single constraint: **CP (Constraint Polynomial).**
+
+Here is the construction of CP:
+
+$$
+CP = \alpha_0C_0 + \alpha_1C_1 + \cdots + \alpha_nC_n
+$$
+
+where $\alpha_i$ are random elements sent by the verifier (not really but I'll make an article on it soon ;) ). And $C_i$ the polynomial constraints, so in our case:
+
+$$
+CP = \alpha_0C_0 + \alpha_1C_1 + \alpha_2C_2
+$$
+
+The process on how to safely obtain those random coefficients will be explained later (but you can search about the Fiat-Shamir heuristic). Now we want to prove that this polynomial is indeed verified by our trace (meaning that it is indeed a polynomial). For that let's say that our CP is of degree n, we could send to the verifier the n roots and the verifier could query our polynomial at random points to check that it matches. But this is:
+
+1. Not efficient
+2. Does not preserve privacy (because sending the roots = sending the full trace)
+
+The verifier has to never have access to the CP but be convinced that it is a polynomial. For that there is a magical tool introduced by Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, and Michael Riabzev in 2018: **FRI.**
+
+## FRI operator (Fast Reed-Solomon Interactive Oracle Proofs)
+
+The FRI operator is a folding operator meaning that it folds the **CP** into a smaller polynomial of degree $\frac{d}{2}$ where d is the degree of **CP**. And if we repeat the process enough times (more precisely $\log_2(d)$ this is why we often want d to be a power of 2).
+
+### The FRI process
+
+The FRI process is a loop that we repeat $\log_2(d)$ times to fold our polynomial (CP in our case) to a polynomial of degree 1.
+
+The process is the following:
+
+```text
+P_0 <- C_P
+n <- 1
+repeat log2(deg(CP)) times:
+    P_{n+1} <- FRI_fold(P_n)
+    n <- n+1
+    commit(P_{n+1})
+send_to_verifier(P_{-1}) // the last folded polynomial (a constant)
+```
+
+#### The FRI folding operator
+
+The FRI operator is inspired from the FFT (Fast-Fourier-Transform) algorithm. 
+Every polynomial can be split between odd and even coefficients:
+
+$$
+P_0(x) = E(x^2) + xO(x^2)
+$$
+
+So to fold that polynomial into a degree $\frac{d}{2}$ polynomial we could just set:
+
+$$
+P_1(x) = E(x) + O(x)
+$$
+
+But as always, how can the verifier can be sure that the prover didn't chose a specific polynomial to cheat. That's why we add randomness to the process. So the folded polynomial becomes:
+
+$$
+P_1(x) = E(x) + \beta O(x)
+$$
+
+#### FRI Commitment
+
+How do we commit to a polynomial? Because of the Lagrange interpolation, a polynomial is described exactly by its n-1 evaluations where n is the degree of the polynomial. (If you don't understand check out the previous article [here](/understanding-starks-from-scratch-with-high-school-math-part-1/))
+
+So to commit to a polynomial we simply need to commit to n-1 valuations and committing to an array is well-known, we can use a merkle tree. I won't exactly describe so a merkle tree works if you don't know please check out this article ([here](https://brilliant.org/wiki/merkle-tree/?ref=flydexo.com)) as knowledge of merkle trees is required in the next steps.
+
+## Final steps
+
+This is a recap of what've sent to the verifier till now:
+
+- CP merkle root
+
+- FRI merkle roots
+
+- All the randomness used for CP and for FRI
+
+But in the end, the goal of a merkle root is to be verified against an authentication path (array of complementary hashes). And the verifier needs those to verify that indeed CP and FRI process are both valid. It will be explained further in the next article but the verifier will query our proof at random points and the prover needs to send the authentication path of those points for each constraint polynomial so the verifier can check whether CP was well constructed and FRI authentication paths to check that the FRI step (the entire loop) is correct for each point.
+
+## That's it! You've proven an automata with STARKS
+
+You might be still a bit confused on how all the brick work together but you've made it. But we have two problems?
+
+1. How do we verify the proof?
+2. It's not really ZK as the proof needs to send the commitment of certain random trace points
+
+And we will do that in the upcoming articles:
+
+1. The magic between non interactive proofs: Fiat-Shamir Heuristic
+2. Verifying the proof
+3. Poseidon hashing
+4. How turn STARKs into ZK-STARKs
+
+I will later publish some notebook (python) code on this little prototype and a cleaner code in OCaml (partially available [here](https://github.com/Flydexo/stark?ref=flydexo.com)).
