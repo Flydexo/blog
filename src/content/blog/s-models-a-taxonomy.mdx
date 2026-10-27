@@ -264,7 +264,7 @@ The closer the probability is to one, the closer the score is to zero. As the pr
 #### Spherical score
 
 $$
-S_{\mathrm{sph}}(q,y) = \frac{\sum_k y_k q_k}{\sqrt{\sum_k q_k^2}}
+S_{\mathrm{sph}}(q,y) = \frac{\displaystyle\sum_k y_k\,q_k}{\sqrt{\displaystyle\sum_k q_k^{2}}}
 $$
 
 It has the same goal as the log score but a smoother gradient, with no vertical asymptote at zero.
