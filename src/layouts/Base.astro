@@ -2,8 +2,46 @@
 import {site} from '../config';
 import '../styles/theme.css';
 import 'katex/dist/katex.min.css';
-interface Props {title?:string;description?:string}
-const {title=site.title,description=site.description}=Astro.props;
+interface Props {title?:string;description?:string;home?:boolean}
+const {title=site.title,description=site.description,home=false}=Astro.props;
 const canonical=new URL(Astro.url.pathname,Astro.site);
 ---
-<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" type="image/svg+xml" href="/favicon.svg"/><meta name="viewport" content="width=device-width"/><title>{title === site.title ? title : title+' — '+site.title}</title><meta name="description" content={description}/><link rel="canonical" href={canonical}/><meta property="og:title" content={title}/><meta property="og:description" content={description}/><meta property="og:url" content={canonical}/><link rel="alternate" type="application/rss+xml" title={site.title} href="/rss.xml"/></head><body><a class="skip" href="#main">Skip to content</a><header><a href="/">{site.title}</a><nav aria-label="Main navigation">{site.navigation.map(item=><a href={item.href}>{item.label}</a>)}</nav></header><main id="main"><slot/></main><footer>Mathéo LD · An open notebook · <a href="/rss.xml">RSS ↗</a></footer></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+    <meta name="viewport" content="width=device-width"/>
+    <title>{title === site.title ? title : title+' — '+site.title}</title>
+    <meta name="description" content={description}/>
+    <link rel="canonical" href={canonical}/>
+    <meta property="og:title" content={title}/>
+    <meta property="og:description" content={description}/>
+    <meta property="og:url" content={canonical}/>
+    <link rel="alternate" type="application/rss+xml" title={site.title} href="/rss.xml"/>
+  </head>
+  <body class:list={{home}}>
+    <a class="skip" href="#main">Skip to content</a>
+    <header>
+      <a class="site-name" href="/">
+        {home && <span class="site-mark" aria-hidden="true">✳</span>}
+        {site.title}
+        {home && <span class="site-note">An open notebook</span>}
+      </a>
+      <nav aria-label="Main navigation">
+        {site.navigation.map(item => <a href={home && item.label==='Index' ? '#writing' : item.href}>{home && item.label==='Index' ? 'Writing' : item.label}</a>)}
+      </nav>
+    </header>
+    <main id="main"><slot/></main>
+    <footer>
+      {home ? (
+        <>
+          <span>Mathéo LD <span class="footer-dot">·</span> Still figuring things out.</span>
+          <div><a href="https://github.com/flydexo">GitHub ↗</a><a href="/rss.xml">RSS ↗</a><a href="#main">Back to the top ↑</a></div>
+        </>
+      ) : (
+        <>Mathéo LD · An open notebook · <a href="/rss.xml">RSS ↗</a></>
+      )}
+    </footer>
+  </body>
+</html>

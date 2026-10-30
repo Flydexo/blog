@@ -1,6 +1,40 @@
 ---
 import Base from '../layouts/Base.astro';
-import {posts} from '../lib/posts';
-const articles=await posts();
+import Sisyphus from '../components/Sisyphus.astro';
+import { posts } from '../lib/posts';
+import '../styles/home.css';
+const articles = await posts();
 ---
-<Base><section class="intro"><span class="eyebrow">NOTES / RESEARCH / IDEAS</span><h1>Learning in public.</h1><p>I'm Mathéo. Exploring artificial intelligence, world models, and the mathematics underneath.</p><a href="/about/">More about me ↗</a></section><section aria-label="Articles">{articles.map(p=><article class="post"><time datetime={p.date}>{new Date(p.date).toLocaleDateString('en',{year:'numeric',month:'short',day:'numeric'})}</time><h2><a href={'/'+p.slug+'/'}>{p.title}</a></h2><p>{p.description}</p><span class="tags">{p.tags.join(' / ')}</span></article>)}</section></Base>
+<Base home>
+  <section class="home-hero" aria-labelledby="home-title">
+    <Sisyphus>
+      <div class="hero-copy">
+        <span class="home-eyebrow"><span class="status-dot"></span> A WORK IN PROGRESS. AS ALWAYS.</span>
+        <h1 id="home-title">A little further.<br/>Then, <em>again.</em></h1>
+        <p>I'm Mathéo. I learn, I build, I write.<br/>Mostly about AI, mathematics, and the<br class="desktop-break"/> things I haven't quite figured out.</p>
+        <a class="writing-link" href="#writing">Notes from the climb <span aria-hidden="true">↓</span></a>
+      </div>
+    </Sisyphus>
+  </section>
+  <section class="writing-section" id="writing" aria-labelledby="writing-title">
+    <div class="writing-heading">
+      <div><span class="home-eyebrow">THE OPEN NOTEBOOK</span><h2 id="writing-title">Notes from the climb<span>.</span></h2></div>
+      <span class="article-count">{String(articles.length).padStart(2, '0')} ENTRIES & COUNTING</span>
+    </div>
+    <div class="article-list">
+      {articles.map((post, index) => (
+        <article class="writing-entry">
+          <span class="entry-number" aria-hidden="true">{String(articles.length - index).padStart(2, '0')}</span>
+          <div class="entry-copy"><h3><a href={'/' + post.slug + '/'}>{post.title}</a></h3><p>{post.description}</p></div>
+          <time datetime={post.date}>{new Date(post.date).toLocaleDateString('en', { month: 'short', year: 'numeric', timeZone: 'UTC' })}</time>
+          <span class="entry-arrow" aria-hidden="true">↗</span>
+        </article>
+      ))}
+    </div>
+  </section>
+  <section class="closing-note" aria-label="About this notebook">
+    <span aria-hidden="true">↟</span>
+    <p>No grand conclusions. Just a few footholds along the way.</p>
+    <a href="/about/">A little about me ↗</a>
+  </section>
+</Base>

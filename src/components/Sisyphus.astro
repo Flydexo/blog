@@ -1,0 +1,87 @@
+<sisyphus-scene>
+  <div class="scene-stage">
+    <div class="scene-copy"><slot /></div>
+    <div class="canvas-wrap">
+      <canvas width="1120" height="520" role="img" aria-label="An ASCII landscape: Sisyphus pushes a boulder up a moss-green mountain beneath a terracotta sun. It rolls back down, and he begins again."></canvas>
+      <button class="boulder-target" type="button" aria-label="Push the boulder uphill. Drag uphill or downhill, or use the arrow keys." aria-describedby="scene-instructions" disabled></button>
+      <span class="boulder-hint" aria-hidden="true">a little help? ↗</span>
+      <noscript><p class="no-script">Sisyphus is taking a breath. Enable JavaScript to set the mountain in motion.</p></noscript>
+    </div>
+  </div>
+  <div class="scene-caption">
+    <span class="figure-label">FIG. 01 <span>—</span> THE ETERNAL RETURN</span>
+    <span class="ascent-label"><span class="live-dot"></span><span data-state>On the way up</span><span class="ascent-count">ASCENT <span data-ascent>001</span></span></span>
+  </div>
+  <div class="scene-below">
+    <div class="scene-quote"><p>“One must imagine Sisyphus happy.”</p><span>ALBERT CAMUS</span></div>
+    <div class="interaction-panel">
+      <div class="scene-controls" role="group" aria-label="Control Sisyphus's climb">
+        <button type="button" data-action="help" disabled><span aria-hidden="true">↗</span> Lend a hand</button>
+        <button type="button" data-action="hinder" disabled><span aria-hidden="true">↙</span> Test his resolve</button>
+        <button type="button" class="pause-button" data-action="pause" aria-label="Pause animation" aria-pressed="false" disabled><span data-pause-icon aria-hidden="true">Ⅱ</span></button>
+      </div>
+      <p id="scene-instructions">Click the rock to help. Drag it either way. <span>Or use ← →.</span></p>
+    </div>
+  </div>
+  <span class="screen-reader" data-announcement role="status" aria-live="polite"></span>
+</sisyphus-scene>
+
+<script>
+  import { mountSisyphus } from '../scripts/sisyphus';
+  class SisyphusScene extends HTMLElement {
+    private cleanup?: () => void;
+    connectedCallback() { this.cleanup = mountSisyphus(this); }
+    disconnectedCallback() { this.cleanup?.(); }
+  }
+  if (!customElements.get('sisyphus-scene')) customElements.define('sisyphus-scene', SisyphusScene);
+</script>
+
+<style>
+  sisyphus-scene { display: block; }
+  .scene-stage { position: relative; }
+  .scene-copy { position: absolute; top: 0; left: 0; z-index: 2; }
+  .canvas-wrap { position: relative; aspect-ratio: 1120 / 520; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .boulder-target { position: absolute; left: 52%; top: 53%; width: 68px; height: 68px; min-width: 44px; min-height: 44px; transform: translate(-50%, -50%); border: 1px solid transparent; border-radius: 50%; background: transparent; padding: 0; cursor: grab; touch-action: none; -webkit-tap-highlight-color: transparent; }
+  .boulder-target:hover { border-color: #83906970; background: #83906908; }
+  .boulder-target:active { cursor: grabbing; }
+  .boulder-target:disabled { visibility: hidden; }
+  .boulder-hint { position: absolute; font: italic 13px/1.4 Georgia, serif; color: #7b826e; white-space: nowrap; pointer-events: none; transform: translate(-30%, -100%); transition: opacity .3s; }
+  .scene-caption { display: flex; justify-content: space-between; align-items: center; padding: 6px 0 18px; border-bottom: 1px solid var(--line); font: 9px/1.5 monospace; letter-spacing: 1px; color: var(--muted); }
+  .figure-label > span { margin-inline: 7px; }
+  .ascent-label { display: flex; align-items: center; gap: 7px; letter-spacing: .4px; }
+  .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+  .ascent-count { margin-left: 16px; border-left: 1px solid var(--line); padding-left: 20px; letter-spacing: 1px; }
+  .scene-below { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 23px 0; }
+  .scene-quote p { font-size: 17px; font-style: italic; margin: 0 0 3px; }
+  .scene-quote > span { font: 8px/1.5 monospace; letter-spacing: 1.5px; color: var(--muted); }
+  .scene-controls { display: flex; gap: 8px; justify-content: flex-end; }
+  .scene-controls button { border: 1px solid #d4d9c8; color: var(--text); background: transparent; border-radius: 5px; font: 10px/1.4 monospace; padding: 10px 12px; cursor: pointer; transition: background .2s, border-color .2s; }
+  .scene-controls button:first-child { background: #e9eddf; border-color: #dce2cd; }
+  .scene-controls button:hover { background: #dfe6d2; border-color: #a1ae8a; }
+  .scene-controls button:disabled { opacity: .4; cursor: default; }
+  .scene-controls button > span { margin-right: 5px; }
+  .scene-controls .pause-button { width: 38px; padding-inline: 0; }
+  .scene-controls .pause-button > span { margin: 0; }
+  #scene-instructions { margin: 7px 0 0; text-align: right; font: 9px/1.5 monospace; color: var(--muted); }
+  .screen-reader { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .no-script { position: absolute; bottom: 20px; right: 0; max-width: 300px; color: var(--muted); font-size: 14px; }
+  @media (max-width: 900px) and (min-width: 761px) { .canvas-wrap { aspect-ratio: 1120 / 640; } .scene-below { gap: 12px; } .scene-quote p { font-size: 15px; } .scene-controls button { font-size: 9px; padding-inline: 9px; } }
+  @media (max-width: 760px) {
+    .scene-copy { position: relative; }
+    .canvas-wrap { aspect-ratio: 760 / 450; margin-top: 14px; }
+    .scene-caption { font-size: 7px; letter-spacing: .5px; padding-top: 12px; gap: 10px; }
+    .figure-label > span { margin-inline: 2px; }
+    .ascent-count { margin-left: 4px; padding-left: 9px; font-size: 7px; }
+    .ascent-label { gap: 4px; }
+    .scene-below { flex-direction: column-reverse; align-items: center; gap: 25px; padding-top: 19px; }
+    .scene-controls { justify-content: center; }
+    .scene-controls button { min-height: 44px; }
+    #scene-instructions { text-align: center; font-size: 8px; }
+    #scene-instructions > span { display: none; }
+    .scene-quote { text-align: center; }
+    .scene-quote p { font-size: 16px; }
+    .boulder-hint { font-size: 11px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .boulder-hint, .scene-controls button { transition: none; } }
+</style>

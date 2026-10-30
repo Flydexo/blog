@@ -8,8 +8,9 @@ Node 22.23.4+ (Node 24 recommended) and Python 3.12+.
 
 ```sh
 npm ci
-npm run dev
+npm run dev -- --background
 npm run check
+npm test
 npm run build
 npm run preview
 ```
@@ -20,6 +21,7 @@ Production output is `dist/`. Pagefind search is generated during build and work
 
 - `src/config.ts`: name, description, navigation, optional Giscus configuration.
 - `src/styles/theme.css`: colors, typography, spacing, width, automatic dark mode.
+- `src/styles/home.css`: the landing page's cream, moss, and terracotta palette.
 - `src/layouts/Base.astro`: shared document, navigation, SEO and footer.
 - `src/components/`: reusable MDX components, diagrams and comments.
 - `src/content/blog/`: new Markdown/MDX articles. The writing-guide draft demonstrates math, code and Mermaid.
@@ -28,6 +30,12 @@ Production output is `dist/`. Pagefind search is generated during build and work
 - `migration/`: migration history and validation notes.
 
 Set `SITE_URL` at build time to change the canonical origin (default https://matheold.com). The previous Ghost installation used https://flydexo.com in canonical URLs. Decide your production origin before launch. Existing article and About slugs are retained.
+
+## Interactive landing page
+
+The homepage's ASCII Sisyphus scene uses Canvas 2D and a small TypeScript animation, with no animation library or external assets. Click the boulder to help, drag along the slope in either direction, or use the help/hinder buttons. With a control focused, the arrow keys move the boulder uphill or downhill. The pause button stops the scene; reduced-motion preferences start it paused, and controls still move the stone in discrete steps. Animation also stops while the scene is offscreen or the tab is hidden.
+
+The scene lives in `src/components/Sisyphus.astro`, its drawing and interactions in `src/scripts/sisyphus.ts`, and its climb/fall/return cycle in `src/scripts/sisyphus-physics.ts`. `npm test` checks the complete loop, input effects, and slope boundaries. The composition draws on the grid, silhouette, and deliberate-motion principles in [0xSero's ASCII-art skill](https://github.com/0xSero/ascii-art).
 
 ## Write
 
