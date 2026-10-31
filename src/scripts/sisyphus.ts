@@ -1,8 +1,8 @@
 import { Climb } from './sisyphus-physics';
+import { groundY as slope, pushingPose, type Point } from './sisyphus-pose';
 
 const W = 1120, H = 520;
 const paper = '#f7f5ee';
-const slope = (x: number) => 470 - (x - 320) * 0.58;
 const hash = (x: number, y: number) => {
   const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
   return n - Math.floor(n);
@@ -106,34 +106,37 @@ function drawBoulder(ctx: CanvasRenderingContext2D, x: number, y: number, angle:
 
 function drawPerson(ctx: CanvasRenderingContext2D, x: number, time: number, returning: boolean) {
   const footY = slope(x);
-  const stride = Math.sin(time * (returning ? 9 : 6)) * 5;
-  const headX = x + (returning ? -5 : 11), headY = footY - 42;
-  type Point = [number, number];
-  const hip: Point = [x - 3, footY - 19];
-  const shoulder: Point = [x + (returning ? -3 : 6), footY - 33];
-  const segments: [Point, Point, number][] = [
-    [hip, shoulder, 5],
-    [shoulder, [x + (returning ? -14 : 20), footY - 27], 2.5],
-    [[x + (returning ? -14 : 20), footY - 27], [x + (returning ? -9 : 31), footY - 37], 2.2],
-    [hip, [x - 12 - stride, footY - 9], 3],
-    [[x - 12 - stride, footY - 9], [x - 18 - stride, slope(x - 18 - stride)], 2.4],
-    [hip, [x + 5 + stride, footY - 12], 3],
-    [[x + 5 + stride, footY - 12], [x + 10 + stride, slope(x + 10 + stride)], 2.4],
+  const { hip, rear, front } = pushingPose(x, time);
+  const headX = x + (returning ? -9 : 9), headY = footY - 52;
+  const shoulder: Point = [x + (returning ? -12 : 1), footY - 40];
+  const segments: [Point, Point, number, string][] = [
+    // Draw the far leg a lighter tone so the two bent knees remain separate.
+    [rear.hip, rear.knee, 2.2, '#7e886a'],
+    [rear.knee, rear.ankle, 2, '#7e886a'],
+    [front.hip, front.knee, 2.5, '#424b39'],
+    [front.knee, front.ankle, 2.2, '#424b39'],
+    [rear.ankle, [rear.ankle[0] + 6, slope(rear.ankle[0] + 6)], 1.8, '#7e886a'],
+    [front.ankle, [front.ankle[0] + 6, slope(front.ankle[0] + 6)], 1.8, '#424b39'],
+    [hip, shoulder, 4.5, '#424b39'],
+    [shoulder, [headX, headY + 5], 2.2, '#424b39'],
+    [shoulder, [x + (returning ? -22 : 13), footY - 34], 2, '#424b39'],
+    [[x + (returning ? -22 : 13), footY - 34], [x + (returning ? -19 : 26), footY - 48], 1.8, '#424b39'],
   ];
   const distanceToSegment = (px: number, py: number, a: Point, b: Point) => {
     const dx = b[0] - a[0], dy = b[1] - a[1];
     const t = Math.max(0, Math.min(1, ((px - a[0]) * dx + (py - a[1]) * dy) / (dx * dx + dy * dy)));
     return Math.hypot(px - a[0] - t * dx, py - a[1] - t * dy);
   };
-  ctx.font = '7px "Courier New", monospace';
-  for (let dy = -51; dy < 19; dy += 3.5) {
-    for (let dx = -29; dx < 35; dx += 3) {
+  // Glyphs fit their cells instead of overlapping into soft, solid limbs.
+  ctx.font = '5px "Courier New", monospace';
+  for (let dy = -62; dy < 20; dy += 4) {
+    for (let dx = -32; dx < 36; dx += 3) {
       const px = x + dx, py = footY + dy;
       const head = Math.hypot(px - headX, py - headY) < 6.3;
-      const body = segments.some(([a, b, width]) => distanceToSegment(px, py, a, b) < width);
-      const tunic = dy > -26 && dy < -13 && dx > -10 && dx < 4 + (-dy - 13) * .4;
+      const body = segments.findLast(([a, b, width]) => distanceToSegment(px, py, a, b) < width);
+      const tunic = dy > -31 && dy < -20 && dx > -23 && dx < -6;
       if (!head && !body && !tunic) continue;
-      ctx.fillStyle = tunic ? '#a96c4e' : '#424b39';
+      ctx.fillStyle = tunic ? '#a96c4e' : head ? '#424b39' : body![3];
       ctx.fillText(head ? '@' : body ? '#' : '+', px, py);
     }
   }
@@ -156,19 +159,29 @@ export function mountSisyphus(root: HTMLElement) {
   const abort = new AbortController();
   const options = { signal: abort.signal };
   let paused = media.matches, visible = true, frame = 0, last = 0, disposed = false;
-  let width = 0, height = 0, scale = 1, offsetX = 0, offsetY = 0;
+  let width = 0, height = 0, scale = 1, portraitScale = 1, offsetX = 0, offsetY = 0;
+  let portrait = false;
   let drag: { id: number; x: number; y: number; progress: number; moved: boolean } | null = null;
   let used = false, feedback = '', feedbackUntil = 0;
 
   const draw = () => {
+    const rockX = 360 + model.progress * 440;
+    const personX = 316 + model.person * 440;
+    // Portrait screens follow the climb at a readable scale rather than shrinking
+    // the whole mountain into a thumbnail. Keep the stone below the introduction.
+    if (portrait) {
+      // Widen the view when the stone rolls away, keeping the walk back visible.
+      scale = Math.min(portraitScale, width / (Math.abs(rockX - personX) + 140));
+      offsetX = width / 2 - (rockX + personX) / 2 * scale;
+      offsetY = height * .62 - (slope((rockX + personX) / 2) - 30) * scale;
+    }
     ctx.clearRect(0, 0, width, height);
     ctx.save(); ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.drawImage(terrain, 0, 0, W, H);
-    const rockX = 360 + model.progress * 440;
     const bounce = model.phase === 'falling' ? Math.abs(Math.sin(model.time * 17)) * Math.abs(model.velocity) * 10 : 0;
     const rockY = slope(rockX) - 30 - bounce;
-    drawPerson(ctx, 316 + model.person * 440, model.time, model.phase === 'falling' || model.phase === 'returning');
+    drawPerson(ctx, personX, model.time, model.phase === 'falling' || model.phase === 'returning');
     drawBoulder(ctx, rockX, rockY, model.progress * 18);
     // Dust follows the stone, on the same typographic lattice.
     if (model.phase === 'falling') {
@@ -220,9 +233,10 @@ export function mountSisyphus(root: HTMLElement) {
     const ratio = Math.min(devicePixelRatio || 1, 2);
     canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const mobile = matchMedia('(max-width: 760px)').matches;
-    scale = mobile ? width / 850 : width / W;
-    offsetX = mobile ? -240 * scale : 0;
+    portrait = width / height < 1;
+    portraitScale = Math.min(width / 260, height / 610);
+    scale = portrait ? portraitScale : Math.min(width / 850, height / 440);
+    offsetX = (width - 850 * scale) / 2 - 260 * scale;
     offsetY = height - H * scale;
     draw();
   };

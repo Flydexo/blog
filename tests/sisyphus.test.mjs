@@ -53,3 +53,20 @@ test('repeated pushes cannot take the stone outside the mountain', () => {
     assert.ok(model.progress >= 0 && model.progress <= 1);
   }
 });
+
+test('pushing knees remain at 90 degrees with feet planted above the slope', async () => {
+  const { pushingPose, groundY } = await import('../src/scripts/sisyphus-pose.ts');
+  for (const x of [316, 500, 756]) {
+    for (let time = 0; time < 2; time += 1 / 60) {
+      const pose = pushingPose(x, time);
+      for (const { hip, knee, ankle } of [pose.rear, pose.front]) {
+        const thigh = [hip[0] - knee[0], hip[1] - knee[1]];
+        const calf = [ankle[0] - knee[0], ankle[1] - knee[1]];
+        const cosine = (thigh[0] * calf[0] + thigh[1] * calf[1]) / (Math.hypot(...thigh) * Math.hypot(...calf));
+        assert.ok(Math.abs(cosine) < 1e-10, 'thigh and calf must be perpendicular');
+        assert.equal(ankle[1], groundY(ankle[0]), 'feet must meet the slope');
+        assert.ok(knee[1] < groundY(knee[0]), 'knees must not sink into the mountain');
+      }
+    }
+  }
+});
