@@ -1,5 +1,53 @@
 ---
 import {site} from '../config';
-const g=site.giscus;
+const g = site.giscus;
+const enabled = g.repo && g.repoId && g.category && g.categoryId;
+const discussionsUrl = `https://github.com/${g.repo}/discussions`;
 ---
-{g.repo&&g.repoId&&g.categoryId&&<script is:inline src="https://giscus.app/client.js" data-repo={g.repo} data-repo-id={g.repoId} data-category={g.category} data-category-id={g.categoryId} data-mapping="pathname" data-strict="1" data-reactions-enabled="1" data-input-position="bottom" data-theme="preferred_color_scheme" data-lang="en" crossorigin="anonymous" async></script>}
+{enabled && (
+  <section class="comments" aria-labelledby="comments-heading" data-pagefind-ignore>
+    <h2 id="comments-heading">Comments</h2>
+    <p>
+      Sign in with GitHub to join the conversation, or browse the
+      {' '}<a href={discussionsUrl}>discussions on GitHub</a>.
+    </p>
+    <script
+      is:inline
+      src="https://giscus.app/client.js"
+      data-repo={g.repo}
+      data-repo-id={g.repoId}
+      data-category={g.category}
+      data-category-id={g.categoryId}
+      data-mapping="pathname"
+      data-strict="1"
+      data-reactions-enabled="1"
+      data-emit-metadata="0"
+      data-input-position="bottom"
+      data-theme="preferred_color_scheme"
+      data-lang="en"
+      data-loading="lazy"
+      crossorigin="anonymous"
+      async
+    ></script>
+    <noscript>
+      <p>Enable JavaScript to load comments here, or use the GitHub discussions link above.</p>
+    </noscript>
+  </section>
+)}
+
+<style>
+  .comments {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .comments h2 {
+    margin-top: 0;
+  }
+
+  .comments p {
+    color: var(--muted);
+    font-size: 1rem;
+  }
+</style>

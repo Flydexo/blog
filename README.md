@@ -1,6 +1,6 @@
 # Mathéo LD — blog
 
-Astro's official blog starter, adapted for technical writing. Static output, no membership, newsletter, database, or server runtime. Source repository is private; published articles are intended to be public.
+Astro's official blog starter, adapted for technical writing. Static output, no membership, newsletter, database, or server runtime. Source and published articles are public.
 
 ## Develop
 
@@ -67,7 +67,13 @@ The initial Ghost HTML snapshot and importer were retired; their history remains
 
 ## Comments
 
-Giscus is optional and disabled until configured in `src/config.ts`. It needs a separate **public** GitHub Discussions repository; the private source repo cannot host public Giscus discussions. Obtain repository/category IDs from giscus.app. There are no newsletter or membership integrations.
+Comments use [Giscus](https://giscus.app), backed by [GitHub Discussions in Flydexo/blog](https://github.com/Flydexo/blog/discussions). `src/config.ts` contains the repository and **Announcements** category IDs. Discussions are enabled on the repository.
+
+The Giscus GitHub App is installed for `Flydexo/blog`; deploy this configuration to activate comments on the site. The repository must stay public, with Discussions enabled and the app granted access. If setting up another repository, [install the Giscus GitHub App](https://github.com/apps/giscus/installations/new) and update the IDs in `src/config.ts`. No API token or server is needed in the blog.
+
+Each published article has its own thread, matched by pathname with strict matching. Giscus creates the discussion when someone first comments or reacts; readers sign in with GitHub to participate. Keep article paths stable to preserve their comment threads. The widget loads lazily, follows the reader's light/dark preference, and includes a direct GitHub link if the embed is unavailable. Comments are excluded from site search and do not appear on About or other non-article pages.
+
+Moderate comments in GitHub Discussions. The Announcements category lets maintainers and Giscus create threads while readers can reply. To disable the widget, clear the Giscus configuration in `src/config.ts` and rebuild. There are no newsletter or membership integrations.
 
 ## Migration status
 
@@ -75,7 +81,7 @@ All eight articles and About are imported, including the complete STARK parts 2 
 
 ## Dokploy Compose deployment
 
-1. Create a **Docker Compose** application in Dokploy and select the private `Flydexo/blog` repository, branch `main`. The Dokploy GitHub connection must have access to this repository.
+1. Create a **Docker Compose** application in Dokploy and select the `Flydexo/blog` repository, branch `main`. The Dokploy GitHub connection must have access to this repository.
 2. Set the Compose path to `./docker-compose.yml` and use the repository root as the build context.
 3. Optionally set `SITE_URL=https://matheold.com` in the application's environment. This is a **build argument**: redeploy after changing it so canonical URLs, RSS and the sitemap are regenerated.
 4. Add your domain in Dokploy's **Domains** tab, selecting service `blog`, container port **8080**, and HTTPS. Dokploy manages routing/TLS through its existing `dokploy-network`; no host port is published.
