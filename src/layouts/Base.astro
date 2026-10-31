@@ -26,7 +26,6 @@ const canonical=new URL(Astro.url.pathname,Astro.site);
       <a class="site-name" href="/">
         {home && <span class="site-mark" aria-hidden="true">✳</span>}
         {site.title}
-        {home && <span class="site-note">An open notebook</span>}
       </a>
       <nav aria-label="Main navigation">
         {site.navigation.map(item => <a href={home && item.label==='Index' ? '#writing' : item.href}>{home && item.label==='Index' ? 'Writing' : item.label}</a>)}
@@ -36,7 +35,7 @@ const canonical=new URL(Astro.url.pathname,Astro.site);
     <footer>
       {home ? (
         <>
-          <span>Mathéo LD <span class="footer-dot">·</span> Still figuring things out.</span>
+          <span>Mathéo LD</span>
           <div><a href="https://github.com/flydexo">GitHub ↗</a><a href="/rss.xml">RSS ↗</a><a href="#main">Back to the top ↑</a></div>
         </>
       ) : (

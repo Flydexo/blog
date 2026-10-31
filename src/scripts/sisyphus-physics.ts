@@ -6,7 +6,6 @@ export class Climb {
   person = 0.43;
   velocity = 0;
   phase: Phase = 'climbing';
-  ascent = 1;
   time = 0;
   private rest = 0;
 
@@ -39,29 +38,8 @@ export class Climb {
       this.person = Math.max(0, this.person - dt * 0.17);
       if (this.person <= 0) {
         this.phase = 'climbing';
-        this.ascent++;
       }
     }
   }
 
-  push(direction: number, still = false) {
-    if (this.phase === 'returning') return false;
-    if (still) {
-      this.progress = Math.max(0, Math.min(1, this.progress + direction * 0.06));
-      this.person = this.progress;
-      this.phase = 'climbing';
-    } else {
-      this.velocity = Math.max(-0.5, Math.min(0.42, this.velocity + direction * 0.2));
-      if (this.phase === 'summit') this.phase = 'climbing';
-      if (this.phase === 'falling' && this.velocity > 0) this.phase = 'climbing';
-    }
-    return true;
-  }
-
-  dragTo(progress: number) {
-    this.progress = Math.max(0, Math.min(1, progress));
-    this.person = this.progress;
-    this.phase = 'climbing';
-    this.velocity = 0;
-  }
 }

@@ -1,5 +1,9 @@
 export type Point = [number, number];
-export const groundY = (x: number) => 470 - (x - 320) * 0.58;
+export const mountainStart = 45;
+export const mountainPeak = 1055;
+export const mountainRise = 290;
+export const mountainSlope = mountainRise / (mountainPeak - mountainStart);
+export const groundY = (x: number) => 470 - (x - mountainStart) * mountainSlope;
 
 /** The knee lies on the hip–ankle diameter's circle, giving a true 90° bend. */
 export function bentLeg(hip: Point, ankle: Point) {

@@ -1,5 +1,5 @@
 import { Climb } from './sisyphus-physics';
-import { groundY as slope, pushingPose, type Point } from './sisyphus-pose';
+import { groundY as slope, mountainStart, mountainPeak, mountainSlope, pushingPose, type Point } from './sisyphus-pose';
 
 const W = 1120, H = 520;
 const paper = '#f7f5ee';
@@ -29,23 +29,14 @@ function landscape() {
       ctx.fillText(d > 46 ? '.' : n > .55 ? ':' : '+', x, y);
     }
   }
-  // A distant ridge stays pale, keeping the climb in the foreground readable.
-  for (let y = 290; y < 478; y += 9) {
-    for (let x = 700; x < 1100; x += 6) {
-      const top = x < 960 ? 440 - (x - 740) * .6 : 308 + (x - 960) * 1.1;
-      if (y < top || hash(x, y) > .63) continue;
-      ctx.fillStyle = '#cbd0bc';
-      ctx.fillText(hash(y, x) > .6 ? ':' : '.', x, y);
-    }
-  }
   for (let y = 182; y <= 478; y += 8) {
-    for (let x = 300; x < 1080; x += 5.8) {
-      const left = 320 + (470 - y) / .58;
-      const right = 820 + (y - 180) * .79;
+    for (let x = 0; x < W; x += 5.8) {
+      const left = mountainStart + (470 - y) / mountainSlope;
+      const right = mountainPeak + (y - 180) * .35;
       if (x < left || x > right) continue;
       const n = hash(Math.round(x), y);
       const depth = y - slope(x);
-      const ridge = 820 + (y - 180) * .22 + Math.sin(y * .028) * 13;
+      const ridge = mountainPeak + (y - 180) * .12 + Math.sin(y * .028) * 8;
       const shade = x > ridge;
       const contour = Math.sin(x * .037 + y * .055 + Math.sin(y * .026) * 2);
       const fade = Math.max(0, (y - 420) / 80);
@@ -146,31 +137,21 @@ export function mountSisyphus(root: HTMLElement) {
   const canvas = root.querySelector('canvas')!;
   const ctx = canvas.getContext('2d');
   if (!ctx) return () => {};
-  const target = root.querySelector<HTMLButtonElement>('.boulder-target')!;
-  const hint = root.querySelector<HTMLElement>('.boulder-hint')!;
-  const stateLabel = root.querySelector<HTMLElement>('[data-state]')!;
-  const ascentLabel = root.querySelector<HTMLElement>('[data-ascent]')!;
-  const announcement = root.querySelector<HTMLElement>('[data-announcement]')!;
-  const pause = root.querySelector<HTMLButtonElement>('[data-action="pause"]')!;
-  const pauseIcon = root.querySelector<HTMLElement>('[data-pause-icon]')!;
   const media = matchMedia('(prefers-reduced-motion: reduce)');
   const model = new Climb();
   const terrain = landscape();
   const abort = new AbortController();
   const options = { signal: abort.signal };
-  let paused = media.matches, visible = true, frame = 0, last = 0, disposed = false;
+  const rockStart = mountainStart + 45;
+  const travel = mountainPeak - 20 - rockStart;
+  let visible = true, frame = 0, last = 0, disposed = false;
   let width = 0, height = 0, scale = 1, portraitScale = 1, offsetX = 0, offsetY = 0;
   let portrait = false;
-  let drag: { id: number; x: number; y: number; progress: number; moved: boolean } | null = null;
-  let used = false, feedback = '', feedbackUntil = 0;
 
   const draw = () => {
-    const rockX = 360 + model.progress * 440;
-    const personX = 316 + model.person * 440;
-    // Portrait screens follow the climb at a readable scale rather than shrinking
-    // the whole mountain into a thumbnail. Keep the stone below the introduction.
+    const rockX = rockStart + model.progress * travel;
+    const personX = rockStart - 44 + model.person * travel;
     if (portrait) {
-      // Widen the view when the stone rolls away, keeping the walk back visible.
       scale = Math.min(portraitScale, width / (Math.abs(rockX - personX) + 140));
       offsetX = width / 2 - (rockX + personX) / 2 * scale;
       offsetY = height * .62 - (slope((rockX + personX) / 2) - 30) * scale;
@@ -182,50 +163,34 @@ export function mountSisyphus(root: HTMLElement) {
     const bounce = model.phase === 'falling' ? Math.abs(Math.sin(model.time * 17)) * Math.abs(model.velocity) * 10 : 0;
     const rockY = slope(rockX) - 30 - bounce;
     drawPerson(ctx, personX, model.time, model.phase === 'falling' || model.phase === 'returning');
-    drawBoulder(ctx, rockX, rockY, model.progress * 18);
-    // Dust follows the stone, on the same typographic lattice.
+    drawBoulder(ctx, rockX, rockY, model.progress * 38);
     if (model.phase === 'falling') {
       ctx.font = '9px monospace';
-      for (let i = 0; i < 12; i++) {
-        const age = (model.time * 1.6 + i / 12) % 1;
+      for (let index = 0; index < 12; index++) {
+        const age = (model.time * 1.6 + index / 12) % 1;
         ctx.globalAlpha = (1 - age) * .55;
-        ctx.fillStyle = i % 5 === 0 ? '#aa6e50' : '#7c8963';
-        ctx.fillText(i % 3 ? '.' : "'", rockX + 25 + age * 65, rockY + 20 - age * 23 + Math.sin(i) * 8);
+        ctx.fillStyle = index % 5 === 0 ? '#aa6e50' : '#7c8963';
+        ctx.fillText(index % 3 ? '.' : "'", rockX + 25 + age * 65, rockY + 20 - age * 23 + Math.sin(index) * 8);
       }
       ctx.globalAlpha = 1;
     }
     ctx.restore();
-    const screenX = rockX * scale + offsetX, screenY = rockY * scale + offsetY;
-    target.style.left = `${screenX}px`;
-    target.style.top = `${screenY}px`;
-    target.style.width = `${Math.max(44, 65 * scale)}px`;
-    target.style.height = `${Math.max(44, 65 * scale)}px`;
-    hint.style.left = `${screenX + 12 * scale}px`;
-    hint.style.top = `${screenY - 43 * scale}px`;
-    hint.style.opacity = used ? '0' : '1';
-    const states = { climbing: 'On the way up', summit: 'Almost, almost…', falling: 'There it goes…', returning: 'And we begin again' };
-    const label = paused ? 'Taking a breath' : feedbackUntil > model.time ? feedback : states[model.phase];
-    if (stateLabel.textContent !== label) stateLabel.textContent = label;
-    ascentLabel.textContent = String(model.ascent).padStart(3, '0');
     root.dataset.phase = model.phase;
   };
 
   const tick = (now: number) => {
     frame = 0;
-    if (disposed || paused || !visible || document.hidden) return;
+    if (disposed || media.matches || !visible || document.hidden) return;
     const dt = last ? Math.min((now - last) / 1000, .05) : 0;
     last = now;
-    if (!drag) model.step(dt);
+    model.step(dt);
     draw();
     frame = requestAnimationFrame(tick);
   };
   const sync = () => {
     cancelAnimationFrame(frame); frame = 0; last = 0;
-    pause.setAttribute('aria-pressed', String(paused));
-    pause.setAttribute('aria-label', paused ? 'Play animation' : 'Pause animation');
-    pauseIcon.textContent = paused ? '▷' : 'Ⅱ';
     draw();
-    if (!disposed && !paused && visible && !document.hidden) frame = requestAnimationFrame(tick);
+    if (!disposed && !media.matches && visible && !document.hidden) frame = requestAnimationFrame(tick);
   };
   const resize = () => {
     const rect = canvas.getBoundingClientRect();
@@ -235,59 +200,12 @@ export function mountSisyphus(root: HTMLElement) {
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     portrait = width / height < 1;
     portraitScale = Math.min(width / 260, height / 610);
-    scale = portrait ? portraitScale : Math.min(width / 850, height / 440);
-    offsetX = (width - 850 * scale) / 2 - 260 * scale;
+    scale = portrait ? portraitScale : Math.min(width / W, height / 440);
+    offsetX = (width - W * scale) / 2;
     offsetY = height - H * scale;
     draw();
   };
-  const push = (direction: number) => {
-    used = true;
-    const accepted = model.push(direction, paused);
-    feedback = accepted ? (direction > 0 ? 'A little kindness helps' : 'Still, he persists') : 'Let him catch his breath';
-    feedbackUntil = model.time + 2;
-    announcement.textContent = feedback;
-    draw();
-  };
-  root.querySelectorAll<HTMLButtonElement>('button').forEach(button => { button.disabled = false; });
-  root.querySelector('[data-action="help"]')!.addEventListener('click', () => push(1), options);
-  root.querySelector('[data-action="hinder"]')!.addEventListener('click', () => push(-1), options);
-  pause.addEventListener('click', () => { paused = !paused; sync(); }, options);
-  root.addEventListener('keydown', event => {
-    if (!(event.target instanceof HTMLButtonElement)) return;
-    if (['ArrowRight', 'ArrowUp', 'ArrowLeft', 'ArrowDown'].includes(event.key)) {
-      event.preventDefault(); push(event.key === 'ArrowRight' || event.key === 'ArrowUp' ? 1 : -1);
-    }
-  }, options);
-  target.addEventListener('pointerdown', event => {
-    if (event.button !== 0 || drag) return;
-    suppressClick = false;
-    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, progress: model.progress, moved: false };
-    target.setPointerCapture(event.pointerId);
-  }, options);
-  target.addEventListener('pointermove', event => {
-    if (!drag || event.pointerId !== drag.id) return;
-    const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
-    if (Math.hypot(dx, dy) < 4 && !drag.moved) return;
-    drag.moved = true; used = true;
-    // Project the gesture onto the incline so vertical and diagonal drags both work.
-    model.dragTo(drag.progress + (dx - dy * .58) / (scale * 440 * (1 + .58 ** 2)));
-    draw();
-  }, options);
-  let suppressClick = false;
-  target.addEventListener('pointerup', event => {
-    if (!drag || event.pointerId !== drag.id) return;
-    suppressClick = drag.moved;
-    drag = null;
-    target.releasePointerCapture(event.pointerId);
-  }, options);
-  const cancelDrag = () => { drag = null; suppressClick = true; };
-  target.addEventListener('pointercancel', cancelDrag, options);
-  target.addEventListener('lostpointercapture', () => { drag = null; }, options);
-  target.addEventListener('click', event => {
-    if (!suppressClick || event.detail === 0) push(event.shiftKey ? -1 : 1);
-    suppressClick = false;
-  }, options);
-  media.addEventListener('change', () => { paused = media.matches; sync(); }, options);
+  media.addEventListener('change', sync, options);
   document.addEventListener('visibilitychange', sync, options);
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);

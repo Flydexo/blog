@@ -6,20 +6,12 @@ import '../styles/home.css';
 const articles = await posts();
 ---
 <Base home>
-  <section class="home-hero" aria-labelledby="home-title">
-    <Sisyphus>
-      <div class="hero-copy">
-        <span class="home-eyebrow"><span class="status-dot"></span> A WORK IN PROGRESS. AS ALWAYS.</span>
-        <h1 id="home-title">A little further.<br/>Then, <em>again.</em></h1>
-        <p>I'm Mathéo. I learn, I build, I write.<br/>Mostly about AI, mathematics, and the<br class="desktop-break"/> things I haven't quite figured out.</p>
-        <a class="writing-link" href="#writing">Notes from the climb <span aria-hidden="true">↓</span></a>
-      </div>
-    </Sisyphus>
+  <section class="home-hero" aria-label="Sisyphus animation">
+    <Sisyphus />
   </section>
   <section class="writing-section" id="writing" aria-labelledby="writing-title">
     <div class="writing-heading">
-      <div><span class="home-eyebrow">THE OPEN NOTEBOOK</span><h2 id="writing-title">Notes from the climb<span>.</span></h2></div>
-      <span class="article-count">{String(articles.length).padStart(2, '0')} ENTRIES & COUNTING</span>
+      <h1 id="writing-title">Writing</h1>
     </div>
     <div class="article-list">
       {articles.map((post, index) => (
@@ -31,10 +23,5 @@ const articles = await posts();
         </article>
       ))}
     </div>
-  </section>
-  <section class="closing-note" aria-label="About this notebook">
-    <span aria-hidden="true">↟</span>
-    <p>No grand conclusions. Just a few footholds along the way.</p>
-    <a href="/about/">A little about me ↗</a>
   </section>
 </Base>

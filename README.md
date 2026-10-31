@@ -33,9 +33,9 @@ Set `SITE_URL` at build time to change the canonical origin (default https://mat
 
 ## Interactive landing page
 
-The homepage's ASCII Sisyphus scene fills the viewport, with navigation and controls overlaid and the articles below. Portrait screens follow the climb and widen the view during the fall to keep both Sisyphus and the stone visible. It uses Canvas 2D and a small TypeScript animation, with no animation library or external assets. Click the boulder to help, drag along the slope in either direction, or use the help/hinder buttons. With a control focused, the arrow keys move the boulder uphill or downhill. The pause button stops the scene; reduced-motion preferences start it paused, and controls still move the stone in discrete steps. Animation also stops while the scene is offscreen or the tab is hidden.
+The homepage's ASCII Sisyphus scene fills the viewport, with navigation overlaid and the articles below. Portrait screens follow the climb and widen the view during the fall to keep both Sisyphus and the stone visible. It uses Canvas 2D and a small TypeScript animation, with no animation library or external assets. The animation pauses when reduced motion is preferred, the scene is offscreen, or the tab is hidden.
 
-The scene lives in `src/components/Sisyphus.astro`, its drawing and interactions in `src/scripts/sisyphus.ts`, its bent-knee skeleton in `src/scripts/sisyphus-pose.ts`, and its climb/fall/return cycle in `src/scripts/sisyphus-physics.ts`. `npm test` checks the complete loop, input effects, slope boundaries, 90° knee angles, and foot contact. The composition draws on the grid, silhouette, and deliberate-motion principles in [0xSero's ASCII-art skill](https://github.com/0xSero/ascii-art).
+The scene lives in `src/components/Sisyphus.astro`, its drawing in `src/scripts/sisyphus.ts`, its bent-knee skeleton in `src/scripts/sisyphus-pose.ts`, and its climb/fall/return cycle in `src/scripts/sisyphus-physics.ts`. `npm test` checks the complete loop, slope boundaries, 90° knee angles, and foot contact. The composition draws on the grid, silhouette, and deliberate-motion principles in [0xSero's ASCII-art skill](https://github.com/0xSero/ascii-art).
 
 ## Write
 
