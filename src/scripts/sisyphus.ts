@@ -1,7 +1,7 @@
 import { Climb } from './sisyphus-physics';
-import { groundY as slope, mountainStart, mountainPeak, mountainSlope, pushingPose, type Point } from './sisyphus-pose';
+import { groundY as slope, pushingPose, type Point } from './sisyphus-pose';
+import { createSceneGeometry, type SceneGeometry } from './sisyphus-geometry';
 
-const W = 1120, H = 520;
 const paper = '#f7f5ee';
 const hash = (x: number, y: number) => {
   const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
@@ -9,42 +9,41 @@ const hash = (x: number, y: number) => {
 };
 
 /** Static terrain is drawn once; only the figure, stone, and dust redraw each frame. */
-function landscape() {
+function landscape(scene: SceneGeometry, ratio: number) {
   const layer = document.createElement('canvas');
-  layer.width = W * 2;
-  layer.height = H * 2;
+  layer.width = Math.round(scene.width * ratio);
+  layer.height = Math.round(scene.height * ratio);
   const ctx = layer.getContext('2d')!;
-  ctx.scale(2, 2);
-  ctx.font = '9px "Courier New", monospace';
+  ctx.scale(ratio, ratio);
+  ctx.font = `${9 * scene.scale}px "Courier New", monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  const pitchX = 5.8 * scene.scale, pitchY = 8 * scene.scale;
 
   // The sun is a halftone disc, with the same character lattice as the terrain.
-  for (let y = 48; y < 180; y += 8) {
-    for (let x = 867; x < 999; x += 6) {
-      const d = Math.hypot(x - 933, (y - 111) * 1.02);
-      if (d > 51) continue;
+  for (let y = scene.sun.y - scene.sun.radius; y <= scene.sun.y + scene.sun.radius; y += pitchY) {
+    for (let x = scene.sun.x - scene.sun.radius; x <= scene.sun.x + scene.sun.radius; x += pitchX) {
+      const distance = Math.hypot(x - scene.sun.x, y - scene.sun.y) / scene.sun.radius;
+      if (distance > 1) continue;
       const n = hash(x, y);
-      ctx.fillStyle = d > 46 ? '#d2ab8f' : n > .35 ? '#b97656' : '#ce9675';
-      ctx.fillText(d > 46 ? '.' : n > .55 ? ':' : '+', x, y);
+      ctx.fillStyle = distance > .9 ? '#d2ab8f' : n > .35 ? '#b97656' : '#ce9675';
+      ctx.fillText(distance > .9 ? '.' : n > .55 ? ':' : '+', x, y);
     }
   }
-  for (let y = 182; y <= 478; y += 8) {
-    for (let x = 0; x < W; x += 5.8) {
-      const left = mountainStart + (470 - y) / mountainSlope;
-      const right = mountainPeak + (y - 180) * .35;
+  for (let y = scene.height - pitchY / 2; y >= scene.peak.y; y -= pitchY) {
+    for (let x = 0; x < scene.width; x += pitchX) {
+      const left = (scene.height - y) / scene.slope;
+      const right = scene.peak.x + (y - scene.peak.y) * .35;
       if (x < left || x > right) continue;
       const n = hash(Math.round(x), y);
-      const depth = y - slope(x);
-      const ridge = mountainPeak + (y - 180) * .12 + Math.sin(y * .028) * 8;
+      const depth = (y - scene.groundY(x)) / scene.scale;
+      const ridge = scene.peak.x + (y - scene.peak.y) * .12 + Math.sin(y / scene.scale * .028) * 8 * scene.scale;
       const shade = x > ridge;
-      const contour = Math.sin(x * .037 + y * .055 + Math.sin(y * .026) * 2);
-      const fade = Math.max(0, (y - 420) / 80);
-      if (n < fade * .65) continue;
-      if (x < left + 9) {
+      const contour = Math.sin(x / scene.scale * .037 + y / scene.scale * .055 + Math.sin(y / scene.scale * .026) * 2);
+      if (x < left + pitchX * 1.5) {
         ctx.fillStyle = '#697954';
         ctx.fillText('/', x, y);
-      } else if (x > right - 8) {
+      } else if (x > right - pitchX * 1.5) {
         ctx.fillStyle = '#8b9772';
         ctx.fillText('\\', x, y);
       } else if (shade) {
@@ -57,21 +56,6 @@ function landscape() {
       }
     }
   }
-  // A few marks at the foot anchor the mountain without drawing a solid baseline.
-  for (let y = 474; y < 510; y += 8) {
-    for (let x = 95; x < 1090; x += 6) {
-      const n = hash(x, y);
-      if (n < .83 + (y - 474) / 210) continue;
-      ctx.fillStyle = n > .97 ? '#929d7c' : '#c4cbb4';
-      ctx.fillText(n > .97 ? "'" : n > .92 ? ',' : '.', x, y);
-    }
-  }
-  const grasses = [[260, 480], [398, 479], [1010, 480], [1070, 475]];
-  ctx.fillStyle = '#8a9974';
-  for (const [x, y] of grasses) { ctx.fillText('\\|/', x, y); ctx.fillText('"', x, y + 8); }
-  ctx.fillStyle = '#b9bfaa';
-  ctx.fillText('—  ·  —', 738, 79);
-  ctx.fillText('·  —', 1035, 219);
   return layer;
 }
 
@@ -139,42 +123,42 @@ export function mountSisyphus(root: HTMLElement) {
   if (!ctx) return () => {};
   const media = matchMedia('(prefers-reduced-motion: reduce)');
   const model = new Climb();
-  const terrain = landscape();
   const abort = new AbortController();
   const options = { signal: abort.signal };
-  const rockStart = mountainStart + 45;
-  const travel = mountainPeak - 20 - rockStart;
   let visible = true, frame = 0, last = 0, disposed = false;
-  let width = 0, height = 0, scale = 1, portraitScale = 1, offsetX = 0, offsetY = 0;
-  let portrait = false;
+  let scene: SceneGeometry;
+  let terrain: HTMLCanvasElement;
 
   const draw = () => {
-    const rockX = rockStart + model.progress * travel;
-    const personX = rockStart - 44 + model.person * travel;
-    if (portrait) {
-      scale = Math.min(portraitScale, width / (Math.abs(rockX - personX) + 140));
-      offsetX = width / 2 - (rockX + personX) / 2 * scale;
-      offsetY = height * .62 - (slope((rockX + personX) / 2) - 30) * scale;
-    }
-    ctx.clearRect(0, 0, width, height);
-    ctx.save(); ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
+    if (!scene || !terrain) return;
+    const person = scene.personPosition(model.person);
+    const rock = scene.rockPosition(model.progress);
+    ctx.clearRect(0, 0, scene.width, scene.height);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.drawImage(terrain, 0, 0, W, H);
-    const bounce = model.phase === 'falling' ? Math.abs(Math.sin(model.time * 17)) * Math.abs(model.velocity) * 10 : 0;
-    const rockY = slope(rockX) - 30 - bounce;
-    drawPerson(ctx, personX, model.time, model.phase === 'falling' || model.phase === 'returning');
-    drawBoulder(ctx, rockX, rockY, model.progress * 38);
+    ctx.drawImage(terrain, 0, 0, scene.width, scene.height);
+    const bounce = model.phase === 'falling' ? Math.abs(Math.sin(model.time * 17)) * Math.abs(model.velocity) * 10 * scene.scale : 0;
+    rock.x += scene.normal.x * bounce;
+    rock.y += scene.normal.y * bounce;
+    ctx.save();
+    ctx.translate(person.x, person.y); ctx.rotate(scene.tilt); ctx.scale(scene.scale, scene.scale);
+    drawPerson(ctx, 0, model.time, model.phase === 'falling' || model.phase === 'returning');
+    ctx.restore();
+    ctx.save();
+    ctx.translate(rock.x, rock.y); ctx.scale(scene.scale, scene.scale);
+    drawBoulder(ctx, 0, 0, model.progress * 38);
+    ctx.restore();
     if (model.phase === 'falling') {
-      ctx.font = '9px monospace';
+      ctx.font = `${9 * scene.scale}px monospace`;
       for (let index = 0; index < 12; index++) {
         const age = (model.time * 1.6 + index / 12) % 1;
         ctx.globalAlpha = (1 - age) * .55;
         ctx.fillStyle = index % 5 === 0 ? '#aa6e50' : '#7c8963';
-        ctx.fillText(index % 3 ? '.' : "'", rockX + 25 + age * 65, rockY + 20 - age * 23 + Math.sin(index) * 8);
+        const along = (25 + age * 65) * scene.scale;
+        const above = (age * 23 + Math.sin(index) * 8) * scene.scale;
+        ctx.fillText(index % 3 ? '.' : "'", rock.x + scene.tangent.x * along + scene.normal.x * above, rock.y + scene.tangent.y * along + scene.normal.y * above);
       }
       ctx.globalAlpha = 1;
     }
-    ctx.restore();
     root.dataset.phase = model.phase;
   };
 
@@ -194,15 +178,13 @@ export function mountSisyphus(root: HTMLElement) {
   };
   const resize = () => {
     const rect = canvas.getBoundingClientRect();
-    width = rect.width; height = rect.height;
+    const { width, height } = rect;
+    if (width <= 0 || height <= 0) return;
     const ratio = Math.min(devicePixelRatio || 1, 2);
     canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio);
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    portrait = width / height < 1;
-    portraitScale = Math.min(width / 260, height / 610);
-    scale = portrait ? portraitScale : Math.min(width / W, height / 440);
-    offsetX = (width - W * scale) / 2;
-    offsetY = height - H * scale;
+    scene = createSceneGeometry(width, height);
+    terrain = landscape(scene, ratio);
     draw();
   };
   media.addEventListener('change', sync, options);

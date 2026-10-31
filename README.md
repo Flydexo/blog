@@ -31,9 +31,9 @@ Production output is `dist/`. Pagefind search is generated during build and work
 
 Set `SITE_URL` at build time to change the canonical origin (default https://matheold.com). The previous Ghost installation used https://flydexo.com in canonical URLs. Decide your production origin before launch. Existing article and About slugs are retained.
 
-## Interactive landing page
+## Animated landing page
 
-The homepage's ASCII Sisyphus scene fills the viewport, with navigation overlaid and the articles below. Portrait screens follow the climb and widen the view during the fall to keep both Sisyphus and the stone visible. It uses Canvas 2D and a small TypeScript animation, with no animation library or external assets. The animation pauses when reduced motion is preferred, the scene is offscreen, or the tab is hidden.
+The homepage's ASCII Sisyphus scene fills the viewport, with navigation overlaid and the articles below. The mountain starts at the bottom-left corner, with an uphill slope equal to viewport height divided by width and the sun in the open sky on the left. The figure rotates with the incline while keeping its knees at 90°. Viewport geometry lives in `src/scripts/sisyphus-geometry.ts` and updates on resize. It uses Canvas 2D and a small TypeScript animation, with no animation library or external assets. The animation pauses when reduced motion is preferred, the scene is offscreen, or the tab is hidden.
 
 The scene lives in `src/components/Sisyphus.astro`, its drawing in `src/scripts/sisyphus.ts`, its bent-knee skeleton in `src/scripts/sisyphus-pose.ts`, and its climb/fall/return cycle in `src/scripts/sisyphus-physics.ts`. `npm test` checks the complete loop, slope boundaries, 90° knee angles, and foot contact. The composition draws on the grid, silhouette, and deliberate-motion principles in [0xSero's ASCII-art skill](https://github.com/0xSero/ascii-art).
 
